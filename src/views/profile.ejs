@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <%- include('partials/head') %>
+    <title>Mi Perfil</title>
+</head>
+<body>
+<script src="/js/auth.js"></script>
+<%- include('partials/navbar') %>
+
+<main>
+    <div class="container">
+
+        <div id="loading" class="center-align" style="margin-top: 80px;">
+            <div class="preloader-wrapper big active">
+                <div class="spinner-layer spinner-teal-only">
+                    <div class="circle-clipper left"><div class="circle"></div></div>
+                    <div class="gap-patch"><div class="circle"></div></div>
+                    <div class="circle-clipper right"><div class="circle"></div></div>
+                </div>
+            </div>
+            <p class="grey-text">Cargando...</p>
+        </div>
+
+        <div id="content" style="display:none;">
+            <div class="row" style="margin-top: 8px;">
+                <div class="col s12">
+                    <h4 class="teal-text">
+                        <i class="material-icons medium">account_circle</i> Mi Perfil
+                    </h4>
+                </div>
+            </div>
+            <div class="row">
+
+                <!-- Formulario -->
+                <div class="col s12 m8">
+                    <div class="card">
+                        <div class="card-content">
+                            <span class="card-title">Información Personal</span>
+
+                            <div id="alert" class="card-panel red lighten-4 red-text text-darken-4" style="display:none;">
+                                <i class="material-icons tiny">error_outline</i> <span id="alert-msg"></span>
+                            </div>
+                            <div id="success" class="card-panel green lighten-4 green-text text-darken-4" style="display:none;">
+                                <i class="material-icons tiny">check_circle</i> Perfil actualizado exitosamente.
+                            </div>
+
+                            <form id="profileForm">
+                                <div class="row" style="margin-bottom:0;">
+                                    <div class="input-field col s12 m6">
+                                        <input id="name" type="text">
+                                        <label for="name">Nombre</label>
+                                    </div>
+                                    <div class="input-field col s12 m6">
+                                        <input id="lastName" type="text">
+                                        <label for="lastName">Apellido</label>
+                                    </div>
+                                </div>
+                                <div class="row" style="margin-bottom:0;">
+                                    <div class="input-field col s12 m6">
+                                        <input id="email" type="email" disabled class="grey-text">
+                                        <label for="email">Email (no editable)</label>
+                                    </div>
+                                    <div class="input-field col s12 m6">
+                                        <input id="phoneNumber" type="tel">
+                                        <label for="phoneNumber">Teléfono</label>
+                                    </div>
+                                </div>
+                                <div class="row" style="margin-bottom:0;">
+                                    <div class="input-field col s12 m6">
+                                        <input id="birthdate" type="date">
+                                        <label for="birthdate" class="active">Fecha de nacimiento</label>
+                                    </div>
+                                    <div class="input-field col s12 m6">
+                                        <input id="age" type="text" disabled>
+                                        <label for="age">Edad calculada</label>
+                                    </div>
+                                </div>
+                                <div class="row" style="margin-bottom:0;">
+                                    <div class="input-field col s12">
+                                        <input id="adress" type="text">
+                                        <label for="adress">Dirección</label>
+                                    </div>
+                                </div>
+                                <div class="row" style="margin-bottom:0;">
+                                    <div class="input-field col s12">
+                                        <input id="url_profile" type="url">
+                                        <label for="url_profile">URL de Perfil</label>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 16px;">
+                                    <button type="submit" class="btn teal waves-effect waves-light">
+                                        <i class="material-icons left">save</i> Guardar Cambios
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta lateral -->
+                <div class="col s12 m4">
+                    <div class="card teal lighten-5 center-align">
+                        <div class="card-content">
+                            <i class="material-icons large teal-text">account_circle</i>
+                            <p id="display-name" class="flow-text teal-text" style="font-weight:600;"></p>
+                            <p id="display-email" class="grey-text"></p>
+                            <div id="display-roles"></div>
+                            <br>
+                            <p><b id="display-age" class="teal-text"></b></p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        const payload = checkAuth();
+        if (!payload) return;
+
+        try {
+            const res = await fetch('/api/users/me', { headers: authHeaders() });
+            if (res.status === 401) { logout(); return; }
+            const user = await res.json();
+
+            fillForm(user);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+
+        } catch (err) {
+            M.toast({ html: 'Error al cargar perfil', classes: 'red' });
+        }
+    });
+
+    function fillForm(user) {
+        document.getElementById('name').value        = user.name        || '';
+        document.getElementById('lastName').value    = user.lastName    || '';
+        document.getElementById('email').value       = user.email       || '';
+        document.getElementById('phoneNumber').value = user.phoneNumber || '';
+        document.getElementById('adress').value      = user.adress      || '';
+        document.getElementById('url_profile').value = user.url_profile || '';
+
+        if (user.birthdate) {
+            document.getElementById('birthdate').value = new Date(user.birthdate).toISOString().split('T')[0];
+            document.getElementById('age').value       = calcAge(user.birthdate) + ' años';
+        }
+
+        document.getElementById('display-name').textContent  = `${user.name || ''} ${user.lastName || ''}`;
+        document.getElementById('display-email').textContent = user.email || '';
+        document.getElementById('display-roles').innerHTML   = (user.roles || ['user'])
+            .map(r => `<span class="chip teal white-text">${r}</span>`).join(' ');
+        document.getElementById('display-age').textContent   = user.birthdate
+            ? calcAge(user.birthdate) + ' años' : '';
+
+        M.updateTextFields();
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        document.getElementById('alert').style.display   = 'none';
+        document.getElementById('success').style.display = 'none';
+
+        const body = {
+            name:        document.getElementById('name').value,
+            lastName:    document.getElementById('lastName').value,
+            phoneNumber: document.getElementById('phoneNumber').value,
+            birthdate:   document.getElementById('birthdate').value,
+            adress:      document.getElementById('adress').value,
+            url_profile: document.getElementById('url_profile').value
+        };
+
+        try {
+            const res  = await fetch('/api/users/me', {
+                method: 'PATCH',
+                headers: authHeaders(),
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                document.getElementById('alert-msg').textContent = data.message || 'Error al actualizar';
+                document.getElementById('alert').style.display = 'block';
+                return;
+            }
+
+            fillForm(data);
+            document.getElementById('success').style.display = 'block';
+
+        } catch (err) {
+            M.toast({ html: 'Error de conexión', classes: 'red' });
+        }
+    });
+</script>
+</body>
+</html>

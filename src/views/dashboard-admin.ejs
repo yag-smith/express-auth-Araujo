@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <%- include('partials/head') %>
+    <title>Dashboard Admin</title>
+    <style>
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #26a69a; color: #fff;
+            display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 8px; }
+    </style>
+</head>
+<body>
+<script src="/js/auth.js"></script>
+<%- include('partials/navbar') %>
+
+<main>
+    <div class="container">
+
+        <div id="loading" class="center-align" style="margin-top: 80px;">
+            <div class="preloader-wrapper big active">
+                <div class="spinner-layer spinner-teal-only">
+                    <div class="circle-clipper left"><div class="circle"></div></div>
+                    <div class="gap-patch"><div class="circle"></div></div>
+                    <div class="circle-clipper right"><div class="circle"></div></div>
+                </div>
+            </div>
+            <p class="grey-text">Cargando...</p>
+        </div>
+
+        <div id="content" style="display:none;">
+            <div class="row" style="margin-top: 8px;">
+                <div class="col s12">
+                    <h4 class="teal-text">
+                        <i class="material-icons medium">admin_panel_settings</i> Panel de Administración
+                    </h4>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col s12">
+                    <div class="card">
+                        <div class="card-content">
+                            <span class="card-title">
+                                Usuarios registrados &nbsp;
+                                <span id="user-count" class="new badge teal" data-badge-caption=""></span>
+                            </span>
+                            <div class="responsive-table">
+                                <table class="striped highlight">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Teléfono</th>
+                                            <th>Rol</th>
+                                            <th>Registro</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- Modal detalle usuario -->
+<div id="modal-user" class="modal">
+    <div class="modal-content">
+        <h5 class="teal-text"><i class="material-icons">person</i> Detalle de Usuario</h5>
+        <table class="striped">
+            <tbody id="modal-body"></tbody>
+        </table>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close btn-flat teal-text waves-effect">Cerrar</a>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+    let allUsers = [];
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        M.Modal.init(document.querySelectorAll('.modal'));
+
+        const payload = checkAuth('admin');
+        if (!payload) return;
+
+        try {
+            const res = await fetch('/api/users', { headers: authHeaders() });
+            if (res.status === 401) { logout(); return; }
+            allUsers = await res.json();
+
+            document.getElementById('user-count').textContent = allUsers.length;
+
+            const tbody = document.getElementById('users-table');
+            tbody.innerHTML = allUsers.map((u, i) => {
+                const roles    = u.roles ? u.roles.join(', ') : 'user';
+                const isAdmin  = u.roles && u.roles.includes('admin');
+                const initials = ((u.name || '?')[0] + (u.lastName || '?')[0]).toUpperCase();
+                const date     = new Date(u.createdAt).toLocaleDateString('es-ES');
+                return `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>
+                            <span class="user-avatar">${initials}</span>
+                            ${u.name || ''} ${u.lastName || ''}
+                        </td>
+                        <td>${u.email}</td>
+                        <td>${u.phoneNumber || 'N/A'}</td>
+                        <td><span class="chip ${isAdmin ? 'teal white-text' : ''}">${roles}</span></td>
+                        <td>${date}</td>
+                        <td>
+                            <a class="btn-small teal waves-effect waves-light tooltipped"
+                               data-tooltip="Ver detalle"
+                               onclick="showUser(${i})">
+                                <i class="material-icons">visibility</i>
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+
+        } catch (err) {
+            M.toast({ html: 'Error al cargar usuarios', classes: 'red' });
+        }
+    });
+
+    function showUser(index) {
+        const u        = allUsers[index];
+        const age      = u.birthdate ? calcAge(u.birthdate) : 'N/A';
+        const birthFmt = u.birthdate ? new Date(u.birthdate).toLocaleDateString('es-ES') : 'N/A';
+        const roles    = u.roles ? u.roles.join(', ') : 'N/A';
+
+        document.getElementById('modal-body').innerHTML = `
+            <tr><td><b>Nombre completo</b></td><td>${u.name || ''} ${u.lastName || ''}</td></tr>
+            <tr><td><b>Email</b></td><td>${u.email}</td></tr>
+            <tr><td><b>Teléfono</b></td><td>${u.phoneNumber || 'N/A'}</td></tr>
+            <tr><td><b>Fecha de nac.</b></td><td>${birthFmt}</td></tr>
+            <tr><td><b>Edad</b></td><td>${age} años</td></tr>
+            <tr><td><b>Dirección</b></td><td>${u.adress || 'N/A'}</td></tr>
+            <tr><td><b>URL perfil</b></td><td>${u.url_profile ? `<a href="${u.url_profile}" target="_blank">${u.url_profile}</a>` : 'N/A'}</td></tr>
+            <tr><td><b>Roles</b></td><td>${roles}</td></tr>
+            <tr><td><b>Registro</b></td><td>${new Date(u.createdAt).toLocaleString('es-ES')}</td></tr>
+        `;
+
+        M.Modal.getInstance(document.getElementById('modal-user')).open();
+    }
+</script>
+</body>
+</html>

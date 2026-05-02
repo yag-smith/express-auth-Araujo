@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <%- include('partials/head') %>
+    <title>403 – Acceso Denegado</title>
+</head>
+<body>
+<script src="/js/auth.js"></script>
+<%- include('partials/navbar') %>
+
+<main>
+    <div class="container center-align" style="margin-top: 80px;">
+        <i class="material-icons" style="font-size: 100px; color: #e53935;">block</i>
+        <h2 class="red-text text-darken-1">403</h2>
+        <h5>Acceso Denegado</h5>
+        <p class="grey-text">No tienes los permisos necesarios para acceder a esta página.</p>
+        <a onclick="history.back(); return false;" href="#" class="btn teal waves-effect waves-light" style="margin-right: 8px;">
+            <i class="material-icons left">arrow_back</i> Volver
+        </a>
+        <a href="/" class="btn-flat waves-effect waves-teal teal-text">Ir al inicio</a>
+    </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+</html>

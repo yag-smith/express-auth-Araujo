@@ -1,0 +1,42 @@
+<nav class="teal darken-2">
+    <div class="nav-wrapper container">
+        <a href="/" class="brand-logo">
+            <i class="material-icons">security</i> AuthApp
+        </a>
+        <a href="#" data-target="mobile-sidenav" class="sidenav-trigger">
+            <i class="material-icons">menu</i>
+        </a>
+        <ul id="nav-desktop" class="right hide-on-med-and-down"></ul>
+    </div>
+</nav>
+<ul class="sidenav" id="mobile-sidenav"></ul>
+
+<script>
+(function () {
+    const token = sessionStorage.getItem('token');
+    const desktop = document.getElementById('nav-desktop');
+    const mobile  = document.getElementById('mobile-sidenav');
+
+    function setLinks(html) { desktop.innerHTML = html; mobile.innerHTML = html; }
+
+    if (!token) {
+        setLinks(`
+            <li><a href="/signIn">Iniciar Sesión</a></li>
+            <li><a href="/signUp">Registrarse</a></li>
+        `);
+    } else {
+        const payload = parseJWT ? parseJWT(token) : null;
+        const isAdmin  = payload && payload.roles && payload.roles.includes('admin');
+        const dash     = isAdmin ? '/dashboard/admin' : '/dashboard/user';
+        setLinks(`
+            <li><a href="${dash}"><i class="material-icons left">dashboard</i>Dashboard</a></li>
+            <li><a href="/profile"><i class="material-icons left">account_circle</i>Mi Perfil</a></li>
+            <li><a href="#" onclick="logout();return false;"><i class="material-icons left">exit_to_app</i>Salir</a></li>
+        `);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        M.Sidenav.init(document.querySelectorAll('.sidenav'));
+    });
+})();
+</script>
